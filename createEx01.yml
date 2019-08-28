@@ -1,0 +1,99 @@
+- name: create a cloudformation stack
+  cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: "present"
+    region: "us-east-1"
+    disable_rollback: true
+    template: "files/cloudformation-example.json"
+    template_parameters:
+      KeyName: "jmartin"
+      DiskType: "ephemeral"
+      InstanceType: "m1.small"
+      ClusterSize: 3
+    tags:
+      Stack: "ansible-cloudformation"
+
+# Basic role example
+- name: create a stack, specify role that cloudformation assumes
+  cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: "present"
+    region: "us-east-1"
+    disable_rollback: true
+    template: "roles/cloudformation/files/cloudformation-example.json"
+    role_arn: 'arn:aws:iam::123456789012:role/cloudformation-iam-role'
+
+- name: delete a stack
+  cloudformation:
+    stack_name: "ansible-cloudformation-old"
+    state: "absent"
+
+# Create a stack, pass in template from a URL, disable rollback if stack creation fails,
+# pass in some parameters to the template, provide tags for resources created
+- name: create a stack, pass in the template via an URL
+  cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: present
+    region: us-east-1
+    disable_rollback: true
+    template_url: https://s3.amazonaws.com/my-bucket/cloudformation.template
+    template_parameters:
+      KeyName: jmartin
+      DiskType: ephemeral
+      InstanceType: m1.small
+      ClusterSize: 3
+    tags:
+      Stack: ansible-cloudformation
+
+# Create a stack, passing in template body using lookup of Jinja2 template, disable rollback if stack creation fails,
+# pass in some parameters to the template, provide tags for resources created
+- name: create a stack, pass in the template body via lookup template
+  cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: present
+    region: us-east-1
+    disable_rollback: true
+    template_body: "{{ lookup('template', 'cloudformation.j2') }}"
+    template_parameters:
+      KeyName: jmartin
+      DiskType: ephemeral
+      InstanceType: m1.small
+      ClusterSize: 3
+    tags:
+      Stack: ansible-cloudformation
+
+# Pass a template parameter which uses Cloudformation's UsePreviousValue attribute
+# When use_previous_value is set to True, the given value will be ignored and
+# Cloudformation will use the value from a previously submitted template.
+# If use_previous_value is set to False (default) the given value is used.
+- cloudformation:
+    stack_name: "ansible-cloudformation"
+    state: "present"
+    region: "us-east-1"
+    template: "files/cloudformation-example.json"
+    template_parameters:
+      DBSnapshotIdentifier:
+        use_previous_value: True
+        value: arn:aws:rds:es-east-1:000000000000:snapshot:rds:my-db-snapshot
+      DBName:
+        use_previous_value: True
+    tags:
+      Stack: "ansible-cloudformation"
+
+# Enable termination protection on a stack.
+# If the stack already exists, this will update its termination protection
+- name: enable termination protection during stack creation
+  cloudformation:
+    stack_name: my_stack
+    state: present
+    template_url: https://s3.amazonaws.com/my-bucket/cloudformation.template
+    termination_protection: yes
+
+# Configure TimeoutInMinutes before the stack status becomes CREATE_FAILED
+# In this case, if disable_rollback is not set or is set to false, the stack will be rolled back.
+- name: enable termination protection during stack creation
+  cloudformation:
+    stack_name: my_stack
+    state: present
+    template_url: https://s3.amazonaws.com/my-bucket/cloudformation.template
+    create_timeout: 5
